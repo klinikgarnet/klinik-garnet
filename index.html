@@ -9,22 +9,40 @@
 body{background:#f0fdfa;padding:1rem}
 .container{max-width:450px;margin:0 auto}
 .header{background:#0d9488;color:#fff;padding:1.2rem;text-align:center;border-radius:0 0 1rem 1rem;margin-bottom:1.5rem}
-.card{background:#fff;border-radius:1rem;padding:1.5rem;box-shadow:0 2px 8px rgba(0,0,0,0.08)}
+.nav{display:flex;justify-content:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.nav button{background:transparent;border:none;color:#0d9488;padding:0.5rem 1rem;cursor:pointer;font-size:1rem;text-decoration:underline}
+.card{background:#fff;border-radius:1rem;padding:1.5rem;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin-bottom:1rem}
 h2{color:#0d9488;margin-bottom:1rem;text-align:center}
 .form-group{margin-bottom:1rem}
 label{display:block;margin-bottom:0.5rem;font-weight:600}
 input{width:100%;padding:0.8rem;border:1px solid #ddd;border-radius:0.5rem;font-size:1rem}
 button.primary{width:100%;padding:0.9rem;border:none;border-radius:0.5rem;background:#0d9488;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;margin-top:0.5rem}
+button.small{width:auto;padding:0.5rem 1rem;font-size:0.9rem;margin:0.25rem}
 .result{text-align:center;margin-top:1.5rem;display:none}
 .ticket-no{font-size:3rem;font-weight:bold;color:#0d9488;margin:1rem 0}
+.hidden{display:none !important}
 .qr-section{text-align:center;margin-top:2rem;padding-top:1.5rem;border-top:1px solid #eee}
+.current-call{background:#fffbeb;border:2px solid #f59e0b;padding:1.5rem;border-radius:1rem;text-align:center;margin-bottom:1rem}
+.current-call .no{font-size:3rem;font-weight:bold;color:#d97706}
+.queue-list{margin-top:1rem}
+.queue-item{display:flex;justify-content:space-between;align-items:center;padding:0.75rem;border-bottom:1px solid #eee}
+.status-wait{color:#666}
+.status-call{color:#d97706;font-weight:bold}
+.status-done{color:#10b981}
 </style>
 </head>
 <body>
 
-<div class="header"><h1>Sistem Giliran Rawatan Klinik Garnet</h1></div>
+<div class="header"><h1>Sistem Giliran Klinik Garnet</h1></div>
 <div class="container">
-  <div class="card">
+  <div class="nav">
+    <button onclick="showTab('daftar')">Daftar Pesakit</button>
+    <button onclick="showTab('staf')">Panel Staf</button>
+    <button onclick="showTab('paparan')">Paparan Ruang Tunggu</button>
+  </div>
+
+  <!-- TAB DAFTAR PESAKIT -->
+  <div id="tab-daftar" class="card">
     <h2>Daftar Giliran</h2>
     <div class="form-group">
       <label>Nama Pesakit</label>
@@ -35,6 +53,7 @@ button.primary{width:100%;padding:0.9rem;border:none;border-radius:0.5rem;backgr
     <div class="result" id="hasil">
       <p>Nombor Giliran Anda:</p>
       <div class="ticket-no" id="nombor-keluar"></div>
+      <p style="color:#666;margin-top:0.5rem">Sila tunggu nombor anda dipanggil</p>
       <button type="button" class="primary" onclick="resetDaftar()">Daftar Lain</button>
     </div>
 
@@ -44,27 +63,188 @@ button.primary{width:100%;padding:0.9rem;border:none;border-radius:0.5rem;backgr
       <p style="font-size:0.9rem;color:#666;margin-top:0.5rem">Imbas guna kamera telefon → buka halaman daftar terus</p>
     </div>
   </div>
+
+  <!-- TAB PANEL STAF -->
+  <div id="tab-staf" class="card hidden">
+    <h2>🎛️ Panel Staf — Panggil Pesakit</h2>
+    
+    <div class="current-call">
+      <p style="color:#666">Sedang Dipanggil:</p>
+      <div class="no" id="panggil-sekarang">—</div>
+      <p id="nama-dipanggil" style="font-weight:bold;margin-top:0.5rem"></p>
+    </div>
+
+    <button type="button" class="primary" onclick="panggilSeterusnya()">🔔 Panggil Seterusnya</button>
+    
+    <div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap">
+      <button type="button" class="primary small" style="background:#10b981" onclick="tandakanSelesai()">✅ Tandakan Selesai</button>
+      <button type="button" class="primary small" style="background:#ef4444" onclick="panggilUlang()">📢 Panggil Semula</button>
+    </div>
+
+    <div class="queue-list">
+      <h3 style="margin:1.5rem 0 0.5rem 0;color:#555">Senarai Giliran Menunggu:</h3>
+      <div id="senarai-giliran"></div>
+    </div>
+  </div>
+
+  <!-- TAB PAPARAN RUANG TUNGGU -->
+  <div id="tab-paparan" class="card hidden">
+    <h2 style="font-size:1.5rem">📺 Paparan Ruang Tunggu</h2>
+    <div style="text-align:center;padding:2rem 1rem;background:#f0fdfa;border-radius:1rem;margin:1rem 0">
+      <p style="font-size:1.2rem;color:#666">Sedang Dipanggil</p>
+      <p style="font-size:4rem;font-weight:bold;color:#0d9488;margin:1rem 0" id="paparan-no">—</p>
+      <p style="font-size:1.3rem;color:#333" id="paparan-nama"></p>
+    </div>
+    <p style="text-align:center;color:#999;font-size:0.9rem">Buka halaman ini di TV/skrin ruang tunggu</p>
+  </div>
 </div>
 
 <script>
-// Penjana nombor giliran
+// Simpan data giliran (dikongsi antara tab)
+let senaraiPesakit = [];
 let nomborKini = 0;
+let sedangDipanggil = null;
 
+// Muat data yang disimpan
+function muatData() {
+  const simpanan = localStorage.getItem('giliranKlinikGarnet');
+  if (simpanan) {
+    const data = JSON.parse(simpanan);
+    senaraiPesakit = data.senarai || [];
+    nomborKini = data.nomborTerkini || 0;
+    sedangDipanggil = data.sedangDipanggil || null;
+  }
+  kemasKiniPaparan();
+}
+
+// Simpan data
+function simpanData() {
+  localStorage.setItem('giliranKlinikGarnet', JSON.stringify({
+    senarai: senaraiPesakit,
+    nomborTerkini: nomborKini,
+    sedangDipanggil: sedangDipanggil
+  }));
+  kemasKiniPaparan();
+}
+
+// Tukar Tab
+function showTab(nama) {
+  document.querySelectorAll('[id^="tab-"]').forEach(tab => tab.classList.add('hidden'));
+  document.getElementById('tab-' + nama).classList.remove('hidden');
+  if (nama === 'staf' || nama === 'paparan') kemasKiniPaparan();
+}
+
+// Daftar Pesakit
 function dapatkanNombor() {
-  const nama = document.getElementById('nama-pesakit').value.trim() || 'Pesakit';
-  if (!nama) { alert('Masukkan nama anda'); return; }
+  const nama = document.getElementById('nama-pesakit').value.trim();
+  if (!nama) { alert('Sila masukkan nama anda'); return; }
   
   nomborKini++;
   const tiket = 'A' + String(nomborKini).padStart(3, '0');
   
+  senaraiPesakit.push({
+    no: tiket,
+    nama: nama,
+    status: 'menunggu'
+  });
+  
   document.getElementById('hasil').style.display = 'block';
   document.getElementById('nombor-keluar').textContent = tiket;
+  
+  simpanData();
 }
 
 function resetDaftar() {
   document.getElementById('nama-pesakit').value = '';
   document.getElementById('hasil').style.display = 'none';
 }
+
+// Panggil Seterusnya
+function panggilSeterusnya() {
+  const seterusnya = senaraiPesakit.find(p => p.status === 'menunggu');
+  if (!seterusnya) {
+    alert('Tiada pesakit dalam senarai giliran');
+    return;
+  }
+  
+  if (sedangDipanggil && sedangDipanggil.status === 'dipanggil') {
+    sedangDipanggil.status = 'selesai';
+  }
+  
+  seterusnya.status = 'dipanggil';
+  sedangDipanggil = seterusnya;
+  
+  bacaSuara(`${seterusnya.no}, ${seterusnya.nama}, sila ke kaunter`);
+  
+  simpanData();
+}
+
+// Panggil Semula
+function panggilUlang() {
+  if (!sedangDipanggil) { alert('Tiada nombor sedang dipanggil'); return; }
+  bacaSuara(`${sedangDipanggil.no}, ${sedangDipanggil.nama}, sila segera ke kaunter`);
+}
+
+// Tandakan Selesai
+function tandakanSelesai() {
+  if (!sedangDipanggil) { alert('Tiada nombor sedang dipanggil'); return; }
+  sedangDipanggil.status = 'selesai';
+  sedangDipanggil = null;
+  simpanData();
+}
+
+// Kemas Kini Semua Paparan
+function kemasKiniPaparan() {
+  // Panel Staf — Sedang Dipanggil
+  const panggilSekarang = document.getElementById('panggil-sekarang');
+  const namaDipanggil = document.getElementById('nama-dipanggil');
+  if (panggilSekarang) {
+    panggilSekarang.textContent = sedangDipanggil ? sedangDipanggil.no : '—';
+    namaDipanggil.textContent = sedangDipanggil ? sedangDipanggil.nama : '';
+  }
+  
+  // Paparan Ruang Tunggu
+  const paparanNo = document.getElementById('paparan-no');
+  const paparanNama = document.getElementById('paparan-nama');
+  if (paparanNo) {
+    paparanNo.textContent = sedangDipanggil ? sedangDipanggil.no : '—';
+    paparanNama.textContent = sedangDipanggil ? sedangDipanggil.nama : '';
+  }
+  
+  // Senarai Giliran
+  const kotakSenarai = document.getElementById('senarai-giliran');
+  if (kotakSenarai) {
+    kotakSenarai.innerHTML = '';
+    senaraiPesakit.filter(p => p.status !== 'selesai').forEach(p => {
+      const item = document.createElement('div');
+      item.className = 'queue-item';
+      item.innerHTML = `
+        <span><strong>${p.no}</strong> — ${p.nama}</span>
+        <span class="status-${p.status === 'menunggu' ? 'wait' : p.status === 'dipanggil' ? 'call' : 'done'}">
+          ${p.status === 'menunggu' ? '⏳ Menunggu' : '🔔 Dipanggil'}
+        </span>
+      `;
+      kotakSenarai.appendChild(item);
+    });
+    if (kotakSenarai.innerHTML === '') {
+      kotakSenarai.innerHTML = '<p style="color:#999;text-align:center;padding:1rem">Tiada pesakit menunggu</p>';
+    }
+  }
+}
+
+// Baca Suara (Panggilan Lisan)
+function bacaSuara(teks) {
+  if ('speechSynthesis' in window) {
+    const ucapan = new SpeechSynthesisUtterance(teks);
+    ucapan.lang = 'ms-MY';
+    ucapan.volume = 1;
+    ucapan.rate = 0.9;
+    speechSynthesis.speak(ucapan);
+  }
+}
+
+// Muat data bila halaman sedia
+window.onload = muatData;
 </script>
 
 </body>
