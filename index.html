@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sistem Giliran Rawatan Klinik</title>
+<title>Sistem Giliran Rawatan Klinik Garnet</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
@@ -26,13 +26,14 @@ button.primary{width:100%;padding:0.9rem;border:none;border-radius:0.5rem;backgr
 </head>
 <body>
 
-<div class="header"><h1>Sistem Giliran Rawatan Klinik</h1></div>
+<div class="header"><h1>Sistem Giliran Rawatan Klinik Garnet</h1></div>
 <div class="container">
   <div class="nav">
     <button onclick="showTab('daftar')">Daftar Pesakit</button>
     <button onclick="showTab('semak')">Semak Tiket</button>
   </div>
 
+  <!-- Tab Daftar -->
   <div id="tab-daftar" class="card">
     <h2>Daftar Giliran</h2>
     <form id="form-daftar">
@@ -48,16 +49,15 @@ button.primary{width:100%;padding:0.9rem;border:none;border-radius:0.5rem;backgr
       <button type="button" class="primary" onclick="resetDaftar()">Daftar Lain</button>
     </div>
 
-    <!-- QR CODE DIPAPARKAN TERUS SEBAGAI IMEJ -->
+    <!-- KOD QR — Alamat Tetap -->
     <div class="qr-section">
       <h3 style="color:#0d9488;margin-bottom:1rem">📱 Imbas Kod QR untuk Daftar Pantas</h3>
-      <div style="display:inline-block;padding:1rem;background:#fff;border-radius:0.5rem;box-shadow:0 2px 6px rgba(0,0,0,0.1)">
-        <img id="imej-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=file:///C:/Users/User/Desktop/sistem-giliran.html" alt="Kod QR" style="display:block">
-      </div>
-      <p style="font-size:0.9rem;color:#666;margin-top:0.5rem">Imbas guna kamera telefon → buka halaman daftar</p>
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://klinikgarnet.github.io/klinik-garnet/" alt="Kod QR" style="display:block;margin:0 auto;padding:1rem;background:#fff;border-radius:0.5rem;box-shadow:0 2px 6px rgba(0,0,0,0.1)">
+      <p style="font-size:0.9rem;color:#666;margin-top:0.5rem">Imbas guna kamera telefon → buka halaman daftar terus</p>
     </div>
   </div>
 
+  <!-- Tab Semak -->
   <div id="tab-semak" class="card hidden">
     <h2>Semak Status Tiket</h2>
     <div class="form-group">
@@ -70,15 +70,18 @@ button.primary{width:100%;padding:0.9rem;border:none;border-radius:0.5rem;backgr
 </div>
 
 <script>
+// Sambungan Pangkalan Data
 const SUPABASE_URL = "https://ccmfwuhtrbozpaarekm.supabase.co";
 const SUPABASE_KEY = "sb_publishable_r8i1N852pOzuxeOboXNW2g_aDfzF9ld";
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Tukar Tab
 function showTab(nama) {
   document.querySelectorAll('[id^="tab-"]').forEach(tab => tab.classList.add('hidden'));
   document.getElementById('tab-' + nama).classList.remove('hidden');
 }
 
+// Daftar Pesakit
 document.getElementById('form-daftar').addEventListener('submit', async e => {
   e.preventDefault();
   const nama = document.getElementById('nama-pesakit').value.trim() || 'Pesakit';
@@ -96,12 +99,14 @@ document.getElementById('form-daftar').addEventListener('submit', async e => {
   }
 });
 
+// Daftar Semula
 function resetDaftar() {
   document.getElementById('form-daftar').reset();
   document.getElementById('form-daftar').classList.remove('hidden');
   document.getElementById('hasil-daftar').style.display = 'none';
 }
 
+// Semak Status Tiket
 async function cariTiket() {
   const no = document.getElementById('nombor-semak').value.trim().toUpperCase();
   if (!no) { alert('Masukkan nombor tiket'); return; }
@@ -118,15 +123,6 @@ async function cariTiket() {
     alert('Ralat: ' + err.message);
   }
 }
-
-// Kemas kini QR dengan alamat sebenar
-window.addEventListener('load', function() {
-  const alamatSebenar = "https://klinikgarnet.github.io/klinik-garnet/";
-const imejQR = document.getElementById('imej-qr');
-if (imejQR) {
-  imejQR.src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(alamatSebenar);
-  }
-});
 </script>
 
 </body>
