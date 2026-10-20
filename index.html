@@ -121,10 +121,10 @@ async function cariTiket() {
 
 // Kemas kini QR dengan alamat sebenar
 window.addEventListener('load', function() {
-  const alamatSebenar = window.location.href;
-  const imejQR = document.getElementById('imej-qr');
-  if (imejQR) {
-    imejQR.src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(alamatSebenar);
+  const alamatSebenar = "https://klinikgarnet.github.io/klinik-garnet/";
+const imejQR = document.getElementById('imej-qr');
+if (imejQR) {
+  imejQR.src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=' + encodeURIComponent(alamatSebenar);
   }
 });
 </script>
